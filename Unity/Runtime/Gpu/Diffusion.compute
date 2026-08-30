@@ -1,0 +1,39 @@
+// GPU-диффузия: 7-точечный лапласиан (порт diffusion.wgsl prometheus-grow).
+// Один поток = одна внутренняя ячейка; workgroup 4×4×4.
+
+#pragma kernel Diffusion
+
+struct Uniforms
+{
+    uint nx, ny, nz, pad0;
+    float dt, diffusion, degradation, dx2;
+    float lo, hi;
+};
+
+StructuredBuffer<float> field_in;
+RWStructuredBuffer<float> field_out;
+cbuffer u : register(b0) { Uniforms u; }
+
+[numthreads(4, 4, 4)]
+void Diffusion(uint3 gid : SV_DispatchThreadID)
+{
+    uint i = gid.x + 1;
+    uint j = gid.y + 1;
+    uint k = gid.z + 1;
+
+    if (i >= u.nx - 1 || j >= u.ny - 1 || k >= u.nz - 1) return;
+
+    uint idx = (i * u.ny + j) * u.nz + k;
+
+    float c    = field_in[idx];
+    float c_im = field_in[((i - 1) * u.ny + j) * u.nz + k];
+    float c_ip = field_in[((i + 1) * u.ny + j) * u.nz + k];
+    float c_jm = field_in[(i * u.ny + (j - 1)) * u.nz + k];
+    float c_jp = field_in[(i * u.ny + (j + 1)) * u.nz + k];
+    float c_km = field_in[(i * u.ny + j) * u.nz + (k - 1)];
+    float c_kp = field_in[(i * u.ny + j) * u.nz + (k + 1)];
+
+    float lap = (c_im + c_ip + c_jm + c_jp + c_km + c_kp) - 6.0 * c;
+    float c_new = c + u.dt * u.diffusion * lap / u.dx2 - u.dt * u.degradation * c;
+    field_out[idx] = clamp(c_new, u.lo, u.hi);
+}

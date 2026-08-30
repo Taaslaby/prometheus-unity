@@ -1,0 +1,19 @@
+[package]
+name = "golden-probe"
+version = "0.1.0"
+edition = "2021"
+
+# Путь к портируемому ядру как в dioma (path-зависимость; SiMuse сам воркспейс).
+[dependencies]
+prometheus-grow = { path = "../../../dioma/crates/SiMuse/crates/prometheus-grow" }
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[bin]]
+name = "golden_probe"
+path = "src/main.rs"
+
+[[bin]]
+name = "compare_bench"
+path = "../bench/compare_bench.rs"

@@ -1,0 +1,58 @@
+// TRP-внимание на compute: T·R^T × distance decay (порт trp_attention.wgsl).
+// Один поток = пара (i,j); atomic append в sparse-выход.
+
+#pragma kernel TrpAttention
+
+struct Uniforms
+{
+    uint n, d, pad0, pad1;
+    float sqrt_d, inv_2sigma2, prune_threshold, max_dist;
+};
+
+StructuredBuffer<float> tropisms;   // N × D
+StructuredBuffer<float> receptors;  // N × D
+StructuredBuffer<float> positions;  // N × 3
+RWStructuredBuffer<float> syn_out;  // тройки: pre, post, score
+RWStructuredBuffer<uint> syn_count;
+cbuffer u : register(b0) { Uniforms u; }
+
+[numthreads(16, 16, 1)]
+void TrpAttention(uint3 gid : SV_DispatchThreadID)
+{
+    uint i = gid.y;
+    uint j = gid.x;
+
+    if (i >= u.n || j >= u.n) return;
+
+    float3 p_i = float3(positions[i*3u], positions[i*3u+1u], positions[i*3u+2u]);
+    float3 p_j = float3(positions[j*3u], positions[j*3u+1u], positions[j*3u+2u]);
+    float3 dd = p_i - p_j;
+    float dist2 = dot(dd, dd);
+
+    if (dist2 > u.max_dist * u.max_dist) return;
+
+    float dotTR = 0.0;
+    uint base_i = i * u.d;
+    uint base_j = j * u.d;
+    [loop]
+    for (uint k = 0; k < u.d; k++)
+    {
+        dotTR += tropisms[base_i + k] * receptors[base_j + k];
+    }
+
+    float raw = abs(dotTR) * u.sqrt_d;
+    float decay = exp(-dist2 * u.inv_2sigma2);
+    float score = raw * decay;
+
+    if (score <= u.prune_threshold) return;
+
+    uint idx;
+    InterlockedAdd(syn_count[0], 1u, idx);
+    uint max_syns = u.n * 64u;
+    if (idx < max_syns)
+    {
+        syn_out[idx * 3u + 0u] = float(i);
+        syn_out[idx * 3u + 1u] = float(j);
+        syn_out[idx * 3u + 2u] = score;
+    }
+}

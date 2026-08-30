@@ -1,0 +1,15 @@
+{
+  "name": "com.dioma.prometheus",
+  "version": "0.1.0",
+  "displayName": "Prometheus Grow (Unity)",
+  "description": "Порт ядра prometheus-grow: CX3D-рост коннектомов, морфоген-диффузия, синаптогенез. Bit-parity с Rust через golden-трейсы.",
+  "unity": "6000.5",
+  "author": {
+    "name": "Atlasov Anton"
+  },
+  "dependencies": {
+    "com.unity.burst": "1.8.18",
+    "com.unity.collections": "2.5.1",
+    "com.unity.mathematics": "1.3.2"
+  }
+}

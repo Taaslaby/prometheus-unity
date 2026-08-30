@@ -1,0 +1,267 @@
+{
+  "source": "dioma/src/bin/export_connectome.rs (Rust reference)",
+  "note": "Отпечаток эталонных коннектомов dioma: физиология целиком (lif/stdp/plasticity/gains), а проводка — хешем канонической сериализации рёбер (int32 pre, int32 post, f32 weight, LE) в порядке роста. Полные файлы (774 КБ) не дублируем; при расхождении хеша сверять с dioma-engine/Tests/Editor/Data.",
+  "connectomes": [
+    {
+      "name": "dioma",
+      "preset": "Agent",
+      "seed": 42,
+      "n": 96,
+      "edgeCount": 1563,
+      "edgesSha256": "b3b44d23937ff648298972d653c637a16ae899c16d40a05a0389ccb1b1668e77",
+      "ntSha256": "c067234bd852c02601722e72bd570df1f7866587b0456b86effb32870e5bd1bc",
+      "regionTags": [
+        "SL",
+        "SR",
+        "I",
+        "ML",
+        "MR"
+      ],
+      "regions": [
+        {
+          "tag": "SL",
+          "start": 0,
+          "end": 20,
+          "inhibitory": false
+        },
+        {
+          "tag": "SR",
+          "start": 20,
+          "end": 40,
+          "inhibitory": false
+        },
+        {
+          "tag": "I",
+          "start": 40,
+          "end": 56,
+          "inhibitory": true
+        },
+        {
+          "tag": "ML",
+          "start": 56,
+          "end": 76,
+          "inhibitory": false
+        },
+        {
+          "tag": "MR",
+          "start": 76,
+          "end": 96,
+          "inhibitory": false
+        }
+      ],
+      "regionPairCounts": {
+        "I->ML": 38,
+        "I->MR": 26,
+        "SL->I": 320,
+        "SL->ML": 60,
+        "SL->SL": 380,
+        "SR->I": 320,
+        "SR->MR": 39,
+        "SR->SR": 380
+      },
+      "dt": 0.5,
+      "stepsPerTick": 100,
+      "lif": {
+        "tauRef": 2.2,
+        "tauM": 20.0,
+        "vRest": -52.0,
+        "vThresh": -45.0,
+        "vReset": -52.0,
+        "tauSyn": 3.0,
+        "tDelay": 1.8
+      },
+      "stdp": {
+        "tauPre": 20.0,
+        "tauPost": 20.0,
+        "tauE": 1000.0,
+        "aLtp": 0.1,
+        "aLtd": 0.005,
+        "lr": 0.15,
+        "wMin": 0.0,
+        "wMax": 6
+      },
+      "plasticity": {
+        "homeoRate": 0.25,
+        "rewardDelayTicks": 1,
+        "homeoEveryTicks": 0,
+        "homeoExcludePre": [],
+        "homeoExcludePreTags": []
+      },
+      "gainsByTag": {
+        "I->ML": 1,
+        "I->MR": 1,
+        "SL->I": 0.8,
+        "SL->ML": 1,
+        "SR->I": 0.8,
+        "SR->MR": 1
+      }
+    },
+    {
+      "name": "dioma_c",
+      "preset": "StageCLite",
+      "seed": 42,
+      "n": 760,
+      "edgeCount": 39163,
+      "edgesSha256": "f8287d4da2aff3fc33a07a6ff38041fc32226656712cefbcf198f628598c73f8",
+      "ntSha256": "5e90268683ea336b4bc22edbd07ea105de91c03096822680e0925164e71fd57a",
+      "regionTags": [
+        "SL",
+        "SR",
+        "WL",
+        "WR",
+        "I",
+        "ML",
+        "MR",
+        "VL",
+        "VR",
+        "CORTEX_E",
+        "CORTEX_I"
+      ],
+      "regions": [
+        {
+          "tag": "SL",
+          "start": 0,
+          "end": 20,
+          "inhibitory": false
+        },
+        {
+          "tag": "SR",
+          "start": 20,
+          "end": 40,
+          "inhibitory": false
+        },
+        {
+          "tag": "WL",
+          "start": 40,
+          "end": 52,
+          "inhibitory": false
+        },
+        {
+          "tag": "WR",
+          "start": 52,
+          "end": 64,
+          "inhibitory": false
+        },
+        {
+          "tag": "I",
+          "start": 64,
+          "end": 80,
+          "inhibitory": true
+        },
+        {
+          "tag": "ML",
+          "start": 80,
+          "end": 100,
+          "inhibitory": false
+        },
+        {
+          "tag": "MR",
+          "start": 100,
+          "end": 120,
+          "inhibitory": false
+        },
+        {
+          "tag": "VL",
+          "start": 120,
+          "end": 180,
+          "inhibitory": false
+        },
+        {
+          "tag": "VR",
+          "start": 180,
+          "end": 240,
+          "inhibitory": false
+        },
+        {
+          "tag": "CORTEX_E",
+          "start": 240,
+          "end": 640,
+          "inhibitory": false
+        },
+        {
+          "tag": "CORTEX_I",
+          "start": 640,
+          "end": 760,
+          "inhibitory": true
+        }
+      ],
+      "regionPairCounts": {
+        "CORTEX_E->CORTEX_E": 6400,
+        "CORTEX_E->CORTEX_I": 4633,
+        "CORTEX_E->I": 1072,
+        "CORTEX_E->ML": 190,
+        "CORTEX_E->MR": 497,
+        "CORTEX_I->CORTEX_E": 9593,
+        "I->ML": 38,
+        "I->MR": 81,
+        "SL->I": 320,
+        "SL->ML": 52,
+        "SR->I": 320,
+        "SR->MR": 109,
+        "VL->CORTEX_E": 4841,
+        "VL->ML": 34,
+        "VL->VL": 3158,
+        "VR->CORTEX_E": 4388,
+        "VR->MR": 53,
+        "VR->VR": 3335,
+        "WL->MR": 30,
+        "WR->ML": 19
+      },
+      "dt": 0.5,
+      "stepsPerTick": 100,
+      "lif": {
+        "tauRef": 2.2,
+        "tauM": 20.0,
+        "vRest": -52.0,
+        "vThresh": -45.0,
+        "vReset": -52.0,
+        "tauSyn": 3.0,
+        "tDelay": 1.8
+      },
+      "stdp": {
+        "tauPre": 20.0,
+        "tauPost": 20.0,
+        "tauE": 1000.0,
+        "aLtp": 0.1,
+        "aLtd": 0.005,
+        "lr": 0.15,
+        "wMin": 0.0,
+        "wMax": 64
+      },
+      "plasticity": {
+        "homeoRate": 0.25,
+        "rewardDelayTicks": 1,
+        "homeoEveryTicks": 0,
+        "homeoExcludePre": [
+          9,
+          10
+        ],
+        "homeoExcludePreTags": [
+          "CORTEX_E",
+          "CORTEX_I"
+        ]
+      },
+      "gainsByTag": {
+        "CORTEX_E->CORTEX_E": 0.02,
+        "CORTEX_E->CORTEX_I": 1,
+        "CORTEX_E->I": 0.2,
+        "CORTEX_E->ML": 0.1,
+        "CORTEX_E->MR": 0.1,
+        "CORTEX_I->CORTEX_E": 1,
+        "CORTEX_I->I": 0.2,
+        "CORTEX_I->ML": 0.1,
+        "CORTEX_I->MR": 0.1,
+        "I->ML": 1,
+        "I->MR": 1,
+        "SL->I": 0.8,
+        "SL->ML": 1,
+        "SR->I": 0.8,
+        "SR->MR": 1,
+        "VL->CORTEX_E": 1,
+        "VR->CORTEX_E": 1,
+        "WL->MR": 2,
+        "WR->ML": 2
+      }
+    }
+  ]
+}

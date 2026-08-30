@@ -1,0 +1,11 @@
+## build artifacts
+# Ловим bin/obj на любой глубине: инструменты множатся (bench, check, ...),
+# а перечислять их по одному значит однажды закоммитить чужой obj.
+bin/
+obj/
+tools/golden-probe/target/
+test_out.txt
+*.user
+.vs/
+.idea/
+.vscode/
