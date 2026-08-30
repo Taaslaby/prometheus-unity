@@ -436,8 +436,7 @@ namespace Prometheus.Runtime.Grow
         {
             var l = Avoidance();
             l.Regions.Add(R("VL", new[] { -45.0, -90.0, 0 }, 14, 30, false, null,
-                ("ASSOC_E", 130.0), ("ML", 170.0), ("MR", 170.0)));
-            l.Regions.Add(R("VR", new[] { 45.0, -90.0, 0 }, 14, 30, false, null,
+                ("ASSOC_E", 130.0), ("ML", 170.0), ("MR", 170.0)));            l.Regions.Add(R("VR", new[] { 45.0, -90.0, 0 }, 14, 30, false, null,
                 ("ASSOC_E", 130.0), ("ML", 170.0), ("MR", 170.0)));
             l.Regions.Add(R("ASSOC_E", new[] { 0.0, 0.0, 0 }, 26, 90, false, "ASSOC_E",
                 ("ASSOC_E", 60.0), ("ASSOC_I", 80.0), ("ML", 150.0), ("MR", 150.0)));
@@ -473,6 +472,39 @@ namespace Prometheus.Runtime.Grow
                 ("CORTEX_E", "ML"), ("CORTEX_E", "MR"),
                 ("CORTEX_I", "CORTEX_E"), ("CORTEX_I", "ML"), ("CORTEX_I", "MR"), ("CORTEX_I", "I"),
             });
+            return l;
+        }
+
+        /// Рыбка: обоняние + хвост-мотор. Другой ВИД, а не стадия dioma —
+        /// схема существует, чтобы проверить, что движок несёт больше двух
+        /// моторных пулов и тягу из спайков.
+        ///
+        /// TAIL — третий моторный пул: его спайки дают тягу напрямую, тогда
+        /// как у агента тяга берётся из моторного тонуса крови. Оба сенсора
+        /// растят к нему аксоны, поэтому «чую еду» переходит в «плыву», а не
+        /// только в «поворачиваю».
+        public static Layout Fish()
+        {
+            var l = new Layout();
+            l.Regions.Add(R("SL", new[] { -60.0, -60.0, 0 }, 15, 20, false, null,
+                ("ML", 170.0), ("TAIL", 200.0)));
+            l.Regions.Add(R("SR", new[] { 60.0, -60.0, 0 }, 15, 20, false, null,
+                ("MR", 170.0), ("TAIL", 200.0)));
+            l.Regions.Add(R("I", new[] { 0.0, -30.0, 0 }, 12, 16, true, null,
+                ("ML", 140.0), ("MR", 140.0), ("TAIL", 160.0)));
+            l.Regions.Add(R("ML", new[] { -60.0, 60.0, 0 }, 15, 20, false, "ML"));
+            l.Regions.Add(R("MR", new[] { 60.0, 60.0, 0 }, 15, 20, false, "MR"));
+            // Хвост между моторными полями и на той же высоте: его морфоген
+            // должен доставать до сенсоров, иначе аксоны уходят в ближний
+            // градиент ML/MR и пул остаётся без входа (проверено: при
+            // TAIL на y=95 входящих из SL/SR было ноль).
+            l.Regions.Add(R("TAIL", new[] { 0.0, 60.0, 0 }, 16, 24, false, "TAIL"));
+            l.AllowedPairs = new List<(string, string)>
+            {
+                ("SL", "ML"), ("SL", "I"), ("SL", "TAIL"),
+                ("SR", "MR"), ("SR", "I"), ("SR", "TAIL"),
+                ("I", "ML"), ("I", "MR"), ("I", "TAIL"),
+            };
             return l;
         }
     }

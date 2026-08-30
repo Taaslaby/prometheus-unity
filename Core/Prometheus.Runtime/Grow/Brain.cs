@@ -25,6 +25,7 @@ namespace Prometheus.Runtime.Grow
         Avoidance,   // + стены 120
         StageB,      // + зрение/ассоциации 300
         StageCLite,  // + кора 760
+        Fish,        // другой ВИД: обоняние + хвост-мотор (120)
     }
 
     public static class Brain
@@ -38,6 +39,7 @@ namespace Prometheus.Runtime.Grow
                 case BrainPreset.Avoidance: return Layouts.Avoidance();
                 case BrainPreset.StageB: return Layouts.StageB();
                 case BrainPreset.StageCLite: return Layouts.StageCLite();
+                case BrainPreset.Fish: return Layouts.Fish();
                 default: throw new ArgumentOutOfRangeException(nameof(preset));
             }
         }

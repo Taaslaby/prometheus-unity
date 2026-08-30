@@ -86,6 +86,20 @@ namespace Prometheus.Runtime.Grow
                 ("CORTEX_E", "I", 0.2f), ("CORTEX_I", "I", 0.2f)),
         };
 
+        /// Рыбка: другой ВИД. Гейны те же по смыслу, что у агента, плюс
+        /// путь в хвост — он даёт тягу, поэтому связь сенсоров с ним сильная.
+        public static DiomaBrainSpec Fish() => new DiomaBrainSpec
+        {
+            Gains = G(
+                ("SL", "ML", 1.0f), ("SR", "MR", 1.0f),
+                ("SL", "I", 0.8f), ("SR", "I", 0.8f),
+                ("I", "ML", 1.0f), ("I", "MR", 1.0f),
+                // Хвост: обе стороны гонят его вперёд (плыть — не поворот),
+                // торможение слабее, иначе рыбка стоит на месте.
+                ("SL", "TAIL", 1.2f), ("SR", "TAIL", 1.2f),
+                ("I", "TAIL", 0.4f)),
+        };
+
         /// Спецификация для пресета; null для тех, у кого её ещё нет.
         public static DiomaBrainSpec For(BrainPreset preset)
         {
@@ -93,6 +107,7 @@ namespace Prometheus.Runtime.Grow
             {
                 case BrainPreset.Agent: return Agent();
                 case BrainPreset.StageCLite: return StageCLite();
+                case BrainPreset.Fish: return Fish();
                 default: return null;
             }
         }
