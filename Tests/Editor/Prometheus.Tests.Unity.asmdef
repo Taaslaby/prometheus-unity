@@ -1,0 +1,23 @@
+{
+    "name": "Prometheus.Tests.Unity",
+    "rootNamespace": "Prometheus.Tests",
+    "references": [
+        "Prometheus.Runtime",
+        "Prometheus.Unity",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
