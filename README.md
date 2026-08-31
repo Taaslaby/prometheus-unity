@@ -17,8 +17,8 @@ genome (модули) ──► клетки делятся / мигрируют
 ```
 prometheus-unity/
 ├── package.json                  # UPM-пакет com.dioma.prometheus
-├── Core/                          # чистый C#, без Unity-зависимостей
-│   ├── Prometheus.Runtime/        # ядро порта (netstandard2.1)
+├── Runtime/                       # то, что импортирует Unity
+│   ├── Core/                      # чистый C#, без Unity-зависимостей
 │   │   ├── Math/                   # Vec3, Grid (trilinear + градиент)
 │   │   ├── Sim/                   # World, Cell, Substance, ChaCha12, XorShift,
 │   │   │                          #   DiffusionCpu, UniformGrid, WorldExtensions
@@ -29,22 +29,40 @@ prometheus-unity/
 │   │   ├── Genetics/              # DNA→NT карта, FlyGenome
 │   │   └── Grow/                  # Brain-фасад, LayoutBuilder, GrowHandle,
 │   │                              #   пресеты схем, Steering, grow + prune
-│   └── Prometheus.Tests/           # xUnit: golden-паритет + API-тесты
-├── Unity/                         # Unity-слой
-│   ├── Runtime/                   # Burst-джобы, HLSL-compute, мост
-│   │   ├── Jobs/                  # DiffusionJob (Burst), BurstWorld
-│   │   ├── Gpu/                   # Diffusion.compute, TrpAttention.compute
-│   │   └── PrometheusBridge.cs    # корутины роста, JSON в файл
-│   └── Tests/Editor/              # редакторные тесты паритета
-└── tools/
-    ├── golden/                    # эталоны Rust (rng/diffusion/growth)
-    ├── golden-probe/              # Rust-генератор golden-трейсов
-    └── check/                     # отладочные утилиты
+│   └── Unity/                     # Unity-слой (Burst-джобы, HLSL-compute,
+│                                  #   PrometheusBridge — корутины роста)
+├── Tests/Editor/                  # EditMode-тесты пакета + Data/ (golden)
+├── Dev~/                          # dotnet-инструменты; Unity НЕ импортирует
+│   ├── Prometheus.Runtime/        # csproj: компилирует Runtime/Core/** 
+│   ├── Prometheus.Tests/           # xUnit: golden-паритет + API-тесты
+│   ├── bench/                     # бенчмарки диффузии/роста (+compare_bench.rs)
+│   ├── check/                     # пошаговая сверка с Rust-трейсом
+│   └── golden-probe/               # Rust-генератор golden-трейсов
+└── scripts/verify.sh              # tests | check | bench (как у dioma-engine)
 ```
 
-## Паритет (как проверяется)
+Проверки без Unity: `scripts/verify.sh` (xUnit с golden-паритетом),
+`scripts/verify.sh check` (трасса аксона против Rust), `scripts/verify.sh bench`.
 
-`tools/golden-probe` (Rust, против prometheus-grow 0.1) пишет эталоны:
+## Подключение к игре (UPM)
+
+Пакет встаёт в проект по-соседству с dioma-engine:
+
+```json
+// dioma-unity/Packages/manifest.json
+"com.dioma.engine":    "file:../../dioma-engine",
+"com.dioma.prometheus": "file:../../prometheus-unity"
+```
+
+asmdef игры ссылается на `Prometheus.Runtime` и `Prometheus.Unity`.
+Инкубация мозгов по кадрам — `Brain.Begin` + `RunSlice` (бюджет времени,
+не stepsPerFrame: GrowSteps — мутирующий ген 50..1000), мост в мозг —
+`grown.ToDiomaJson(DiomaBrainSpec.For(preset))` → `DiomaBrain.FromJson`.
+Рецепт аквариума — `Hatchery`/`Lineage` в `dioma-unity/Assets/Dioma/Game`.
+
+## Паритет## Паритет (как проверяется)
+
+`Dev~/golden-probe` (Rust, против prometheus-grow 0.1) пишет эталоны в `Tests/Editor/Data`:
 
 - `rng.json` — потоки StdRng (ChaCha12): seed_from_u64, next_u64/u32,
   gen::<f64>, gen_range(-1..1), f32, смешанные выборки;
@@ -52,7 +70,7 @@ prometheus-unity/
 - `grow_avoidance.json` — рост avoidance-схемы 400 шагов (сид 777):
   позиции 120 сом, все рёбра с весами, трейс кончика аксона.
 
-C#-тесты (`Core/Prometheus.Tests`, запуск без Unity) сверяют:
+C#-тесты (`Dev~/Prometheus.Tests`, запуск без Unity) сверяют:
 
 1. **ChaCha12** — точный порт rand 0.8 StdRng: PCG32-сид → 32 байта,
    4-блочный буфер, f64 = 53 старших бита, gen_range с scale-loop;
@@ -67,7 +85,7 @@ C#-тесты (`Core/Prometheus.Tests`, запуск без Unity) сверяю�
    `dioma/src/bin/export_connectome.rs`.
 
 Эталон для пункта 5 лежит отпечатком —
-`tools/golden/dioma_connectome_fingerprint.json`: физиология целиком
+`Tests/Editor/Data/dioma_connectome_fingerprint.json`: физиология целиком
 (lif/stdp/plasticity/гейны по тегам), проводка — SHA-256 канонической
 сериализации рёбер (int32 pre, int32 post, f32 weight, LE) в порядке
 роста. Полные файлы (774 КБ) не дублируем; если хеш разошёлся, разбирать
@@ -360,7 +378,7 @@ StartCoroutine(PrometheusBridge.GrowCoroutine(
 
 - GPU: бэкенды `BurstDiffusionBackend` и `ComputeDiffusionBackend`
   (реализации `IDiffusionBackend` из Core) + `.compute`-шейдеры
-  в `Unity/Runtime/Gpu/` и `Unity/Runtime/Jobs/`.
+  в `Runtime/Unity/Gpu/` и `Runtime/Unity/Jobs/`.
 
 ### Регенерация golden (при изменении Rust-ядра)
 
@@ -458,8 +476,8 @@ Hoare, tips-сборка и `seen`-инициализация без LINQ.
 | `engine/trp.rs`                 | `Models/SynapseModels.cs`      |
 | `engine/genetics/genome.rs`     | `Genetics/Genome.cs`           |
 | `gpu/mod.rs` (DiffusionBackend) | `Sim/DiffusionBackend.cs` (IDiffusionBackend + World.SetDiffusionBackend) |
-| `gpu/diffusion.wgsl`            | `Unity/Runtime/Gpu/Diffusion.compute` (+ `ComputeDiffusionBackend`) |
-| `gpu/trp_attention.wgsl`       | `Unity/Runtime/Gpu/TrpAttention.compute` |
+| `gpu/diffusion.wgsl`            | `Runtime/Unity/Gpu/Diffusion.compute` (+ `ComputeDiffusionBackend`) |
+| `gpu/trp_attention.wgsl`       | `Runtime/Unity/Gpu/TrpAttention.compute` |
 | dioma `brain/growth/grow.rs`   | `Grow/ConnectomeGrow.cs`       |
 | dioma `rng.rs` (XorShift)      | `Sim/Rng.cs`                   |
 | — (новое)                      | `Grow/Brain.cs`, `Grow/LayoutBuilder.cs`, `Grow/SteeringPresets.cs`, `Sim/WorldExtensions.cs` |
