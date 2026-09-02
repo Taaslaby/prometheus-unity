@@ -1,6 +1,6 @@
 {
   "name": "com.dioma.prometheus",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "displayName": "Prometheus Grow (Unity)",
   "description": "Порт ядра prometheus-grow: CX3D-рост коннектомов, морфоген-диффузия, синаптогенез. Bit-parity с Rust через golden-трейсы.",
   "unity": "6000.5",
