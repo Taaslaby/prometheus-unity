@@ -75,6 +75,39 @@ namespace Prometheus.Runtime.Grow
             return this;
         }
 
+        /// Аксон последнего объявленного региона к морфогену target —
+        /// в стиле Axon, но вызывается ПОСЛЕ Region: HostWire-стыковка
+        /// блоков (источник растёт к реле-приманке блока).
+        public LayoutBuilder AxonTo(string sourceTag, string targetMorphogen,
+            double maxLen)
+        {
+            CloseRegion();
+            // Добавить аксон уже ЗАКРЫТОМУ региону: ищем в списке.
+            for (int i = _regions.Count - 1; i >= 0; i--)
+                if (_regions[i].Tag == sourceTag)
+                {
+                    _regions[i].Axons.Add(AxonSpec.To(targetMorphogen, maxLen));
+                    return this;
+                }
+            // Регион ещё не закрыт — это текущий.
+            if (_current != null && _current.Tag == sourceTag)
+            {
+                _current.Axons.Add(AxonSpec.To(targetMorphogen, maxLen));
+                return this;
+            }
+            throw new System.ArgumentException(
+                $"AxonTo: региона '{sourceTag}' нет в сборке");
+        }
+
+        /// Убрать пару (from → to): гейтовые блоки подменяют прямой
+        /// путь затворным — иначе вход пробивает мотор мимо логики
+        /// (замер BlockBrain: SL→ML 56 рёбер прямо, затвор не сложился).
+        public LayoutBuilder Exclude(string from, string to)
+        {
+            _pairs.RemoveAll(p => p.Item1 == from && p.Item2 == to);
+            return this;
+        }
+
         /// Готовая схема (закрывает последний регион).
         public Layout Build()
         {

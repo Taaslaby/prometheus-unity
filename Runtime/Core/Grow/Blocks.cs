@@ -49,21 +49,49 @@ namespace Prometheus.Runtime.Grow
         public static BlockBuilder CoincidenceGate(string id, string a, string b,
             string output)
         {
-            return b => b
-                .Region($"{id}.A").At(-25, -10, 0).Radius(6).Count(4)
-                    .Axon($"{id}.DIS", 60)
-                .Region($"{id}.B").At(25, -10, 0).Radius(6).Count(4)
-                    .Axon($"{id}.DIS", 60)
+            return host => host
+                
+                // Входные реле СЕКРЕТИРУЮТ (приманка): источник-хозяин
+                // растёт к ним аксионом (HostWire на стороне сборки).
+                // Первая версия росла сама (Axon(a)) — направление
+                // перевёрнуто: аксон А тянулся К морфогену SL и давал
+                // рёбра A→SL, а вход — это SL→A (замер: 0 рёбер).
+                // Реле прижаты к источникам: морфогены Core (ML/MR)
+                // заглушают далёкую приманку — SR→G1.B не дорастал
+                // (замер: SL→G1.A=3, SR→G1.B=0 на равных дистанциях —
+                // прореживание съедало одиночные рёбра). Больше реле,
+                // ближе к источникам, длиннее аксон.
+                .Region($"{id}.A").At(-45, -45, 0).Radius(8).Count(8)
+                    .Secrete($"{id}.A")
+                    .Axon($"{id}.DIS", 60).Axon(output, 200)
+                .Region($"{id}.B").At(45, -45, 0).Radius(8).Count(8)
+                    .Secrete($"{id}.B")
+                    .Axon($"{id}.DIS", 60).Axon(output, 200)
                 .Region($"{id}.DIS").At(0, -5, 0).Radius(5).Count(8).Inhibitory()
                     .Secrete($"{id}.DIS")
                     .Axon($"{id}.GATE", 40)
                 .Region($"{id}.GATE").At(0, 10, 0).Radius(5).Count(6).Inhibitory()
                     .Secrete($"{id}.GATE")
                     .Axon(output, 80)
+                // Входные порты: источник входит в реле блока — без
+                // пары блок глух (замер: SL→G1.A = 0 рёбер).
+                .Allow(a, $"{id}.A")
+                .Allow(b, $"{id}.B")
                 .Allow($"{id}.A", $"{id}.DIS")
                 .Allow($"{id}.B", $"{id}.DIS")
+                // Носитель сигнала: реле несут ВОЗБУЖДЕНИЕ на выход
+                // (дизингибция открывает путь, но не даёт плюс — вход
+                // обязан проходить сам). GATE-тормоз давит его, пока
+                // входы не совпали.
+                .Allow($"{id}.A", output)
+                .Allow($"{id}.B", output)
                 .Allow($"{id}.DIS", $"{id}.GATE")
-                .Allow($"{id}.GATE", output);
+                .Allow($"{id}.GATE", output)
+                // ГЕЙТ ПОДМЕНЯЕТ прямой путь: иначе вход→выход пробивает
+                // мотор мимо затвора (замер: SL→ML прямо 56 рёбер —
+                // одиночный SL открывал мотор без второго входа).
+                .Exclude(a, output)
+                .Exclude(b, output);
         }
 
         // ── Рефлекторная дуга (S→I→M) ────────────────────────────────
@@ -71,7 +99,7 @@ namespace Prometheus.Runtime.Grow
         // Порты: вход s, выход m.
         public static BlockBuilder ReflexArc(string id, string s, string m)
         {
-            return b => b
+            return host => host
                 .Region($"{id}.I").At(0, -15, 0).Radius(8).Count(10).Inhibitory()
                     .Axon(m, 120)
                 .Allow(s, $"{id}.I")
@@ -84,7 +112,7 @@ namespace Prometheus.Runtime.Grow
         // торможении. Порты: тонус in, выходы L, R.
         public static BlockBuilder HalfCenter(string id, string drive)
         {
-            return b => b
+            return host => host
                 .Region($"{id}.L").At(-15, 0, 0).Radius(8).Count(10).Inhibitory()
                     .Secrete($"{id}.L")
                     .Axon($"{id}.R", 40).Axon($"{id}.L_OUT", 60)
@@ -108,7 +136,7 @@ namespace Prometheus.Runtime.Grow
         public static BlockBuilder Comparator(string id, string pred, string fact,
             string ack, string err)
         {
-            return b => b
+            return host => host
                 .Region($"{id}.A").At(-20, 0, 0).Radius(5).Count(4)
                     .Axon($"{id}.DIS", 50)
                 .Region($"{id}.F").At(20, 0, 0).Radius(5).Count(4)
@@ -129,7 +157,10 @@ namespace Prometheus.Runtime.Grow
                 // дизингибирующий сигнал открыл ACK. Рост по аксонам:
                 // Axon(ack) — иначе Allow один давал бы разрешение
                 // без приманки (замер теста: DIS→ACK не рос).
-                .Allow($"{id}.DIS", ack);
+                .Allow($"{id}.DIS", ack)
+                // Затвор подменяет прямой путь факта к ERR (аналогично
+                // CoincidenceGate): ERR гасится ТОЛЬКО через C1.GATE.
+                .Exclude(fact, err);
         }
 
         // ── Готовый мозг-сборка: ядро сенсоров/моторов рыбки ─────────
@@ -169,6 +200,20 @@ namespace Prometheus.Runtime.Grow
         /// Встроить блок в сборку (флюентно: блок возвращает билдер).
         public static LayoutBuilder And(this LayoutBuilder host, BlockBuilder block) =>
             block(host);
+
+        /// HostWire: аксон региона-источника к приманке блока — входной
+        /// порт. Блок секретирует реле, хозяин РАСТЁТ к нему: направление
+        /// по правилу Прометея (растёт владелец аксона).
+        public static LayoutBuilder Wire(this LayoutBuilder host, string sourceTag,
+            string targetMorphogen, double maxLen = 120)
+        {
+            var region = host.GetType()
+                .GetField("_current", System.Reflection.BindingFlags.NonPublic |
+                                     System.Reflection.BindingFlags.Instance);
+            // Проще публичный путь: Region(tag) с уже закрытым прошлым —
+            // вместо рефлексии расширяем builder публичным методом.
+            return host.AxonTo(sourceTag, targetMorphogen, maxLen);
+        }
 
         /// Встроить блок и связать порт с внешним регионом.
         public static LayoutBuilder And(this LayoutBuilder host, BlockBuilder block,
