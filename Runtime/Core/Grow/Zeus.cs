@@ -123,13 +123,21 @@ namespace Prometheus.Runtime.Grow
                 host.ClaimPort(rightMotor + ":diff", "Differential");
                 host.Allow(leftSense, leftMotor);      // прямой путь
                 host.Allow(rightSense, rightMotor);
-                // Кросс-торможение через интернейрон-инвертор.
-                host.Region("INV." + PortId("D", leftSense, rightSense, leftMotor))
-                    .At(0, 0, 0).Radius(6).Count(6).Inhibitory()
-                    .Axon(leftMotor, 80);
+                // Кросс-торможение через интернейрон-инвертор: правый
+                // сенсор гасит левый мотор. Правила стыковки: инвертор
+                // СЕКРЕТИРУЕТ (приманка для роста SR), SR РАСТЁТ к нему
+                // (AxonTo — порт Зевса); аксон INV→ML растёт сам
+                // (ML секретирует в Core).
                 string inv = "INV." + PortId("D", leftSense, rightSense, leftMotor);
-                host.Allow(rightSense, inv);           // правый сенсор гасит левый
+                host.Region(inv)
+                    .At(0, -35, 0).Radius(6).Count(8).Inhibitory()
+                    .Secrete(inv)
+                    .Axon(leftMotor, 130);
+                host.AxonTo(rightSense, inv, 110);
+                host.Allow(rightSense, inv);
+                host.Allow(inv, leftMotor);
                 host.Exclude(leftSense, rightMotor);   // антагонизм: без прямых кросс-путей
+                host.Exclude(rightSense, leftMotor);
             };
         }
 
